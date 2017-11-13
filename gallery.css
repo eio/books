@@ -1,0 +1,66 @@
+body{
+	font-family: Monospace;
+	background-color: #000;
+	color: #fff;
+	margin: 0px;
+	overflow: hidden;
+}
+/*#homepage {
+	position: absolute;
+	z-index: 999;
+	top: 10px;
+	width: 150px;
+	height: 50px;
+	cursor: pointer;
+	background-image: url('/images/home.png');
+	background-repeat: no-repeat;
+	background-size: contain;
+}*/
+#info {
+	position: absolute;
+	top: 10px;
+	width: 100%;
+	text-align: center;
+	z-index: 100;
+	display: block;
+}
+#controls {
+	opacity: 0.5;
+	font-size: 50%;
+	position: absolute;
+	text-align: right;
+	z-index: 100;
+	top: 10px;
+	right: 10px;
+}
+.button {
+	position: absolute;
+	left: 10px;
+	color: turquoise;
+	font-weight: bold;
+	text-decoration: underline;
+	cursor: pointer
+}
+.actions {
+	padding: 5px;
+	line-height: 0;
+}
+.actions span {
+	line-height: 4em;
+	padding: 1em;
+	border: 1px solid white;
+	cursor: pointer;
+	white-space: nowrap;
+	user-select: none;
+}
+b,
+.actions span:hover {
+	color: turquoise;
+	border-color: turquoise;
+}
+.actions span.on,
+.actions span:active {
+	color: black;
+	background-color: turquoise;
+	border-color: turquoise;
+}
