@@ -14,7 +14,7 @@ If this isn't working, you may have to disable your browser's pop-up blocker.
 `Order` button cleans things up:
 ![order](./screenshots/order.png)
 
-`Chaos` button adds some random:
+`Chaos` button stirs things up:
 ![chaos](./screenshots/chaos.png)
 
 # Notes on Data #
