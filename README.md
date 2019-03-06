@@ -19,7 +19,7 @@ If this isn't working, you may have to disable your browser's pop-up blocker.
 
 # Notes on Data #
 
-If you'd like to visualize your own set of books, simply:
+To visualize your own set of books:
 
 1) Create a new CSV file using `data/books.csv` as a reference 
 
@@ -29,18 +29,3 @@ If you'd like to visualize your own set of books, simply:
 
 4) Open `index.html` in your favorite web browser
 
-# General Advice #
-
-Read more books.
-
-Log what you consume.
-
-Explore to expand your mind.
-
-```
-“I cannot remember the books I have read
-any more than the meals I have eaten;
-even so, they have made me.”
-
-— Ralph Waldo Emerson
-```
