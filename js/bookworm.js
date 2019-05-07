@@ -121,7 +121,7 @@ function addEntity( texture, name, link ) {
 };
 
 function initCamera( zoom ) {
-	zoom = zoom ? zoom : 18;
+	zoom = zoom ? zoom : 20;
 	camera.position.set( 0, 0, zoom );
 	camera.lookAt( new THREE.Vector3() );
 	if ( group ) {
