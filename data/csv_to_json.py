@@ -3,7 +3,7 @@ import json
 
 booklist = []
 
-with open('books.csv', 'rb') as csvfile:
+with open('books.csv', 'r') as csvfile:
   bookreader = csv.DictReader(csvfile)
   for book in bookreader:
     booklist.append(book)
