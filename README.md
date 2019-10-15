@@ -1,6 +1,6 @@
 # 3D WebGL Bookshelf #
 
-Try it out here: https://wobkat.github.io/books/
+Try it out here: https://eio.github.io/books/
 
 Clicking a book cover image should open a new browser window to a page where you can purchase the book.
 
