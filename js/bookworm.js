@@ -1,11 +1,6 @@
-if ( ! Detector.webgl ) {
-	Detector.addGetWebGLMessage();
-}
-
 THREE.Cache.enabled = true;
 
 var BOOK_COUNT = BOOKS.length;
-
 for (var i = 0; i < BOOK_COUNT; i++) {
 	BOOKS[i].index = i;
 }
