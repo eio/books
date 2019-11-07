@@ -138,7 +138,7 @@ function init() {
 
 	// CONTROLS
 	controls = new THREE.FlyControls( camera );
-	controls.movementSpeed = 5;
+	controls.movementSpeed = 10;
 	controls.domElement = container;
 	// controls.rollSpeed = Math.PI / 24;
 	controls.rollSpeed = 0.2;

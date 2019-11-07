@@ -43,7 +43,7 @@ var controls = '\
 	</p>\
 	<b>W:</b> forwards, <b>S:</b> backwards, <b>A:</b> left, <b>D:</b> right,\
 	<br>\
-	<b>R/F:</b> up/down, <b>Q/E:</b> roll, <b>&#8679;/&#8681;:</b> pitch, <b>&#8678;/&#8680;:</b> yaw<br/>\
+	<b>R/F:</b> up/down, <b>Q/E:</b> roll, <b>&uarr;/&darr;:</b> pitch, <b>&larr;/&rarr;:</b> yaw<br/>\
 </div>\
 <br>';
 
