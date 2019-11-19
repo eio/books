@@ -5,7 +5,7 @@ window.mobilecheck = function() {
 };
 if (window.mobilecheck() == true) {
 	document.getElementById('controls').style.visibility = 'hidden';
-	alert('If you come back with a mouse and keyboard, you can zip around using the flight controls.')
+	// alert('If you come back with a mouse and keyboard, you can zip around using the flight controls.')
 }
 if ( ! Detector.webgl ) {
 	Detector.addGetWebGLMessage();

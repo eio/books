@@ -136,16 +136,6 @@ function init() {
 	// SCENE
 	scene = new THREE.Scene();
 
-	// CONTROLS
-	controls = new THREE.FlyControls( camera );
-	controls.movementSpeed = 10;
-	controls.domElement = container;
-	// controls.rollSpeed = Math.PI / 24;
-	controls.rollSpeed = 0.2;
-	controls.autoForward = false;
-	controls.dragToLook = true;
-	// controls.dragToLook = false;
-
 	// GROUP
 	group = new THREE.Group();
 	scene.add( group );
@@ -210,6 +200,23 @@ function init() {
 
 	// RAYCASTER
 	raycaster = new THREE.Raycaster();
+
+	if (window.mobilecheck() == true) {
+		controls = new THREE.OrbitControls( camera, renderer.domElement );
+		controls.rotateSpeed = 1;
+		controls.minDistance = 0;
+	}
+	else {
+		// CONTROLS
+		controls = new THREE.FlyControls( camera, renderer.domElement );
+		controls.movementSpeed = 10;
+		controls.domElement = container;
+		// controls.rollSpeed = Math.PI / 24;
+		controls.rollSpeed = 0.2;
+		controls.autoForward = false;
+		controls.dragToLook = true;
+		// controls.dragToLook = false;
+	}
 
 	// EVENTS
 	document.addEventListener('mousemove', mouseMoveHandler, false);
