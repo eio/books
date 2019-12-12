@@ -203,7 +203,7 @@ function init() {
 
 	if (window.mobilecheck() == true) {
 		controls = new THREE.OrbitControls( camera, renderer.domElement );
-		controls.rotateSpeed = 1;
+		controls.rotateSpeed = 0.1;
 		controls.minDistance = 0;
 	}
 	else {
