@@ -12,10 +12,10 @@ If this isn't working, you may have to disable your browser's pop-up blocker.
 <b>R/F:</b> up/down, <b>Q/E:</b> roll, <b>&#8679;/&#8681;:</b> pitch, <b>&#8678;/&#8680;:</b> yaw<br/>
 
 `Order` button cleans things up:
-![order](./screenshots/order.png)
+![order](./img/screenshots/order.png)
 
 `Chaos` button stirs things up:
-![chaos](./screenshots/chaos.png)
+![chaos](./img/screenshots/chaos.png)
 
 # Notes on Data #
 
