@@ -64,12 +64,13 @@ function unscramble( entity ) {
 	}
 	
 	// set up six rows 
-	var A = BOOK_COUNT / 6;
+	var A = BOOK_COUNT / 7;
 	var B = A * 2;
 	var C = A * 3;
 	var D = A * 4;
 	var E = A * 5;
 	var F = A * 6;
+	var G = A * 7;
 	var xStart = index - (A / 2);
 	var x;
 	var y;
@@ -92,6 +93,9 @@ function unscramble( entity ) {
 	} else if (index <= F && index > E) {
 		y = -5;
 		x = xStart - E;
+	} else if (index <= G && index > F) {
+		y = -7;
+		x = xStart - F;
 	}
 
 	entity.position.set( x, y, -20 );
@@ -117,7 +121,7 @@ function addEntity( texture, name, link ) {
 
 function initCamera( zoom ) {
 	zoom = zoom ? zoom : 25;
-	camera.position.set( 0, 0, zoom );
+	camera.position.set( 0, 2, zoom );
 	camera.lookAt( new THREE.Vector3() );
 	if ( group ) {
 		group.rotation.y = 0;
