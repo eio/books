@@ -28,7 +28,7 @@ function bigControls() {
 var controls = '\
 <img id="gitcat" draggable="false" src="img/gitcat.svg"\
 	 style="left:10px; top:10px; z-index:200; position:absolute; cursor:pointer;"\
-	 onclick="window.open(\'https://github.com/eio/timelines\')"/>\
+	 onclick="window.open(\'https://github.com/eio/books\')"/>\
 <div id="info">\
 	<div class="actions">\
 		<span id="reset_btn">Order</span>\
