@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Books by Country</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #222; }
+  #map { height: 100vh; width: 100vw; background: #fafafa; }
+  .title-box {
+    position: absolute; top: 10px; left: 55px; z-index: 500;
+    background: rgba(255,255,255,.95); padding: 10px 14px;
+    border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,.15);
+    font-size: 13px; line-height: 1.4;
+  }
+  .title-box h1 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+  .title-box .meta { color: #666; font-size: 11px; }
+  .legend {
+    background: rgba(255,255,255,.95); padding: 8px 12px;
+    border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,.15);
+    font-size: 12px; line-height: 1.6;
+  }
+  .legend h4 { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: #333; }
+  .legend .row { display: flex; align-items: center; }
+  .legend .swatch { display: inline-block; width: 18px; height: 12px; margin-right: 6px; border: 1px solid #ddd; }
+  .legend .top-list { margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; }
+  .legend .top-list ol { margin: 0; padding-left: 18px; font-size: 11px; }
+  .legend .top-list li { padding: 1px 0; }
+  .leaflet-tooltip.book-tooltip {
+    background: rgba(0,0,0,.85); color: #fff; border: none;
+    padding: 5px 9px; font-size: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.3);
+  }
+  .leaflet-tooltip.book-tooltip::before { display: none; }
+  .leaflet-tooltip.book-tooltip b { font-weight: 600; }
+  /* Country popup with scrollable book table */
+  .leaflet-popup.country-popup .leaflet-popup-content-wrapper { border-radius: 6px; }
+  .leaflet-popup.country-popup .leaflet-popup-content {
+    margin: 0; padding: 0; width: 480px !important; max-height: 460px; overflow: hidden;
+  }
+  .country-popup-inner { display: flex; flex-direction: column; max-height: 460px; }
+  .country-popup-inner header {
+    padding: 10px 14px; border-bottom: 1px solid #e6e6e6; background: #f7f9f6;
+  }
+  .country-popup-inner header h3 { margin: 0; font-size: 14px; font-weight: 600; }
+  .country-popup-inner header .sub { font-size: 11px; color: #666; margin-top: 2px; }
+  .country-popup-inner .scroll { overflow-y: auto; }
+  .country-popup-inner table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .country-popup-inner th, .country-popup-inner td {
+    padding: 4px 10px; text-align: left; border-bottom: 1px solid #f0f0f0; vertical-align: top;
+  }
+  .country-popup-inner th {
+    font-weight: 600; background: #fafafa; position: sticky; top: 0;
+    border-bottom: 1px solid #d4d4d4; font-size: 11px; text-transform: uppercase;
+    letter-spacing: .04em; color: #555;
+  }
+  .country-popup-inner td.year { white-space: nowrap; color: #555; width: 1%; }
+  .country-popup-inner td.author { color: #444; width: 28%; }
+  .country-popup-inner td a { color: #1b5e20; text-decoration: none; }
+  .country-popup-inner td a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="title-box">
+  <h1>📚 Books by Country</h1>
+  <div class="meta" id="meta">…</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="data/books.js"></script>
+<script>
+// --- 1. Compute counts and group books by country ---
+const counts = {};
+const booksByCountry = {};
+for (const b of BOOKS) {
+  counts[b.Country] = (counts[b.Country] || 0) + 1;
+  (booksByCountry[b.Country] = booksByCountry[b.Country] || []).push(b);
+}
+// Sort each country's books by author then year.
+for (const k in booksByCountry) {
+  booksByCountry[k].sort((x, y) =>
+    x.Author.localeCompare(y.Author) || String(x["Year Published"]).localeCompare(String(y["Year Published"]))
+  );
+}
+document.getElementById("meta").textContent =
+  `${BOOKS.length} books · ${Object.keys(counts).length} countries`;
+
+// --- 2. Natural Earth name → our country name aliases ---
+const aliases = {
+  "United States of America": "United States",
+  "Czechia": "Czech Republic",
+};
+
+// --- 3. Forest green sequential scale (log-ish breaks; US dominates the long tail) ---
+function colorFor(n) {
+  if (!n)        return "#ececec";
+  if (n >= 100)  return "#00441b";
+  if (n >= 50)   return "#006d2c";
+  if (n >= 20)   return "#238b45";
+  if (n >= 10)   return "#41ab5d";
+  if (n >= 5)    return "#74c476";
+  if (n >= 2)    return "#a1d99b";
+  return "#e5f5e0"; // 1
+}
+
+// --- 4. Geometry fixups for two issues in Natural Earth 110m countries ---
+//   a) Countries that straddle the antimeridian (Russia, Fiji) end up with parts in
+//      negative-lon space, appearing detached on the opposite side of the world map.
+//      `unwrapAntimeridian` shifts those parts by +360 and then stitches any rings
+//      that share an antimeridian edge into a single polygon (so Russia/Chukotka
+//      becomes one shape with no internal seam). Safe to call on any country with
+//      a MultiPolygon: it only shifts polygons *entirely* in negative-lon space, and
+//      it only stitches polygons whose lon=180 vertex latitudes match exactly.
+//   b) France's MultiPolygon includes French Guiana in South America — drop any
+//      sub-polygon whose max longitude is in the western hemisphere.
+function shiftNegativeLons(ring) {
+  for (const pt of ring) if (pt[0] < 0) pt[0] += 360;
+}
+function stitchRings(ringA, aTop, aBot, ringB, bTop, bBot) {
+  // Walk A from just-after a_bot up to a_top, then B from just-after b_top up to b_bot, then close.
+  const Na = ringA.length - 1, Nb = ringB.length - 1;
+  const merged = [];
+  let i = (aBot + 1) % Na;
+  while (true) { merged.push(ringA[i]); if (i === aTop) break; i = (i + 1) % Na; }
+  i = (bTop + 1) % Nb;
+  while (true) { merged.push(ringB[i]); if (i === bBot) break; i = (i + 1) % Nb; }
+  merged.push(merged[0]);
+  return merged;
+}
+function unwrapAntimeridian(geom) {
+  if (geom.type !== "MultiPolygon") return;
+  const polys = geom.coordinates;
+  // 1) Shift any polygon entirely in negative-lon space by +360.
+  for (const poly of polys) {
+    if (poly[0].every(pt => pt[0] <= 0)) shiftNegativeLons(poly[0]);
+  }
+  // 2) Find polygons with exactly 2 vertices at lon=180; pair them by matching lats; stitch.
+  const cut = [];
+  for (let i = 0; i < polys.length; i++) {
+    const verts = [];
+    const ring = polys[i][0];
+    for (let j = 0; j < ring.length - 1; j++) {
+      if (Math.abs(ring[j][0] - 180) < 1e-9) verts.push({ idx: j, lat: ring[j][1] });
+    }
+    if (verts.length === 2) {
+      verts.sort((a, b) => b.lat - a.lat);
+      cut.push({ polyIdx: i, topIdx: verts[0].idx, botIdx: verts[1].idx, lats: [verts[0].lat, verts[1].lat] });
+    }
+  }
+  const consumed = new Set();
+  const stitched = [];
+  for (let i = 0; i < cut.length; i++) {
+    if (consumed.has(cut[i].polyIdx)) continue;
+    for (let j = i + 1; j < cut.length; j++) {
+      if (consumed.has(cut[j].polyIdx)) continue;
+      const A = cut[i], B = cut[j];
+      if (Math.abs(A.lats[0] - B.lats[0]) < 1e-6 && Math.abs(A.lats[1] - B.lats[1]) < 1e-6) {
+        stitched.push([stitchRings(polys[A.polyIdx][0], A.topIdx, A.botIdx, polys[B.polyIdx][0], B.topIdx, B.botIdx)]);
+        consumed.add(A.polyIdx); consumed.add(B.polyIdx);
+        break;
+      }
+    }
+  }
+  geom.coordinates = polys.filter((_, i) => !consumed.has(i)).concat(stitched);
+}
+function fixFrance(geom) {
+  if (geom.type !== "MultiPolygon") return;
+  const kept = geom.coordinates.filter(poly => Math.max.apply(null, poly[0].map(pt => pt[0])) > 0);
+  if (kept.length === 1) { geom.type = "Polygon"; geom.coordinates = kept[0]; }
+  else geom.coordinates = kept;
+}
+
+// --- 5. Map setup ---
+const map = L.map("map", {
+  center: [25, 10],
+  zoom: 2,
+  minZoom: 2,
+  maxZoom: 7,
+  worldCopyJump: true,
+  zoomControl: true,
+});
+
+L.tileLayer("https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png", {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attribution">CARTO</a>',
+  subdomains: "abcd",
+  maxZoom: 7,
+  opacity: 0.5,
+}).addTo(map);
+
+// --- 6. Helpers ---
+function esc(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function popupHtml(name, list) {
+  const rows = list.map(b => `
+    <tr>
+      <td class="author">${esc(b.Author)}</td>
+      <td>${b.URL ? `<a href="${esc(b.URL)}" target="_blank" rel="noopener">${esc(b.Title)}</a>` : esc(b.Title)}</td>
+      <td class="year">${esc(b["Year Published"])}</td>
+    </tr>`).join("");
+  return `
+    <div class="country-popup-inner">
+      <header>
+        <h3>${esc(name)}</h3>
+        <div class="sub">${list.length} book${list.length === 1 ? "" : "s"}</div>
+      </header>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Author</th><th>Title</th><th>Year</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// --- 7. Load country polygons (from CDN), apply geometry fixups, render, wire up events ---
+let countryLayer = null;
+
+fetch("https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_110m_admin_0_countries.geojson")
+  .then(r => r.json())
+  .then(geo => {
+    for (const f of geo.features) {
+      const raw = f.properties.ADMIN || f.properties.NAME;
+      if (raw === "Russia" || raw === "Fiji") unwrapAntimeridian(f.geometry);
+      else if (raw === "France") fixFrance(f.geometry);
+    }
+
+    countryLayer = L.geoJSON(geo, {
+      style: feature => {
+        const raw = feature.properties.ADMIN || feature.properties.NAME;
+        const name = aliases[raw] || raw;
+        const n = counts[name] || 0;
+        return {
+          fillColor: colorFor(n),
+          weight: 0.6,
+          color: "#444",
+          fillOpacity: n ? 0.9 : 0.5,
+        };
+      },
+      onEachFeature: (feature, lyr) => {
+        const raw = feature.properties.ADMIN || feature.properties.NAME;
+        const name = aliases[raw] || raw;
+        const n = counts[name] || 0;
+        const label = n
+          ? `<b>${esc(name)}</b> &mdash; ${n} book${n === 1 ? "" : "s"}`
+          : `<b>${esc(name)}</b> <span style="opacity:.65">&mdash; 0</span>`;
+        lyr.bindTooltip(label, { sticky: true, className: "book-tooltip" });
+
+        lyr.on("mouseover", e => e.target.setStyle({ weight: 1.6, color: "#1b5e20" }));
+        lyr.on("mouseout",  e => countryLayer.resetStyle(e.target));
+
+        lyr.on("click", e => {
+          if (!n) return; // no popup for countries with zero books
+          L.popup({
+            maxWidth: 520,
+            className: "country-popup",
+            autoPan: true,
+            autoPanPadding: [20, 20],
+          })
+            .setLatLng(e.latlng)
+            .setContent(popupHtml(name, booksByCountry[name]))
+            .openOn(map);
+        });
+      },
+    }).addTo(map);
+  })
+  .catch(err => {
+    document.body.insertAdjacentHTML("beforeend",
+      `<div style="position:absolute;top:60px;left:10px;background:#fee;color:#900;padding:10px;border:1px solid #c66;border-radius:4px;font-size:12px;z-index:600">
+       Failed to load country borders: ${esc(err.message)}</div>`);
+  });
+
+// --- 8. Legend (color scale + top 5) ---
+const legend = L.control({ position: "bottomright" });
+legend.onAdd = () => {
+  const div = L.DomUtil.create("div", "legend");
+  const swatches = [
+    ["#00441b", "100+"],
+    ["#006d2c", "50–99"],
+    ["#238b45", "20–49"],
+    ["#41ab5d", "10–19"],
+    ["#74c476", "5–9"],
+    ["#a1d99b", "2–4"],
+    ["#e5f5e0", "1"],
+    ["#ececec", "0"],
+  ];
+  const top5 = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,5);
+  div.innerHTML = `
+    <h4>Books per country</h4>
+    ${swatches.map(([c,l]) => `<div class="row"><span class="swatch" style="background:${c}"></span>${l}</div>`).join("")}
+    <div class="top-list">
+      <h4>Top 5</h4>
+      <ol>${top5.map(([n,v]) => `<li>${esc(n)} &mdash; ${v}</li>`).join("")}</ol>
+    </div>
+  `;
+  return div;
+};
+legend.addTo(map);
+</script>
+
+</body>
+</html>

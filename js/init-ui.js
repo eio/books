@@ -29,6 +29,10 @@ var controls = '\
 <img id="gitcat" draggable="false" src="img/gitcat.svg"\
 	 style="left:10px; top:10px; z-index:200; position:absolute; cursor:pointer;"\
 	 onclick="window.open(\'https://github.com/eio/books\')"/>\
+<img id="globe" draggable="false" src="img/globe.svg"\
+	 title="World map view"\
+	 style="left:10px; top:42px; z-index:200; position:absolute; cursor:pointer;"\
+	 onclick="window.location.href=\'map.html\'"/>\
 <div id="info">\
 	<div class="actions">\
 		<span id="reset_btn">Order</span>\

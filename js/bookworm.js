@@ -16,6 +16,12 @@ var group, entities;
 var mouse = new THREE.Vector2();
 var INTERSECTED = null;
 var MOUSE_CLICKING = false;
+var MOUSE_MOVED = false;
+
+// Render-on-demand: only push frames to the GPU when something visibly changed.
+var needsRender = true;
+var lastCamPos = new THREE.Vector3();
+var lastCamQuat = new THREE.Quaternion();
 
 //  START
 init();
@@ -41,6 +47,7 @@ function addImage( image ) {
 			var texture = new THREE.CanvasTexture( imageFile );
 			texture.name = title;
 			addEntity( texture, title, image['URL'] );
+			needsRender = true;
 	});
 };
 
@@ -136,6 +143,7 @@ function initCamera( zoom ) {
 		group.rotation.y = 0;
 		group.rotation.x = 0;
 	}
+	needsRender = true;
 };
 
 function init() {
@@ -176,6 +184,7 @@ function init() {
 		for(var i = 0; i < eggs.length; i++) {
 			unscramble(eggs[i]);
 		}
+		needsRender = true;
 		// // CLEAR
 		// while( entities.children.length ) {
 		// 	var entity = entities.children[ 0 ]
@@ -203,7 +212,11 @@ function init() {
 			scramble(eggs[i]);
 		}
 		SPIN = true;
+		needsRender = true;
 	});
+
+	lastCamPos.copy(camera.position);
+	lastCamQuat.copy(camera.quaternion);
 
 	// RENDERER
 	renderer = new THREE.WebGLRenderer( { antialias: true } );
@@ -246,6 +259,7 @@ function mouseMoveHandler(event) {
 	mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
 	mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
 	MOUSE_CLICKING = false;
+	MOUSE_MOVED = true;
 };
 function mouseDownHandler(event) {
 	event.preventDefault();
@@ -259,48 +273,54 @@ function windowResizeHandler() {
 	camera.aspect = window.innerWidth / window.innerHeight;
 	camera.updateProjectionMatrix();
 	renderer.setSize( window.innerWidth, window.innerHeight );
+	needsRender = true;
 };
 
 //  MAIN LOOP
 
 function animate() {
-	if ( SPIN ) {
-		// ROTATE
-		group.rotation.y = performance.now() / 6000;
-		group.rotation.x = performance.now() / 9000;
-	}
-
-	renderer.render( scene, camera );
 	requestAnimationFrame( animate );
 
 	var delta = clock.getDelta();
 	controls.update( delta );
 
-	// find intersections
-	raycaster.setFromCamera( mouse, camera );
-	var intersects = raycaster.intersectObjects( scene.children, true );
-	if ( intersects.length > 0 ) {
-		document.body.style.cursor = 'pointer';
-		if ( MOUSE_CLICKING ) {
-			if ( INTERSECTED != intersects[ 0 ].object ) {
-				// if ( INTERSECTED ) {
-				// 	for (var i = 0; i < entities.children.length; i++) {
-				// 		var mesh = entities.children[i];
-				// 		mesh.material.color.setRGB(1,1,1);
-				// 	}
-				// }
-				INTERSECTED = intersects[0].object;
-				// INTERSECTED.material.color.setRGB(0.6,1.0,1.0);
-				console.log('Clicked on:', INTERSECTED);
-				window.open(INTERSECTED.userData.url, '_blank', 'toolbar=yes,scrollbars=yes,resizable=yes,top=100,left=100,width=1200,height=700');
+	if ( SPIN ) {
+		// ROTATE
+		group.rotation.y = performance.now() / 6000;
+		group.rotation.x = performance.now() / 9000;
+		needsRender = true;
+	}
+
+	// Detect controls-driven camera movement (FlyControls / OrbitControls don't notify us).
+	if ( !camera.position.equals(lastCamPos) || !camera.quaternion.equals(lastCamQuat) ) {
+		lastCamPos.copy(camera.position);
+		lastCamQuat.copy(camera.quaternion);
+		needsRender = true;
+	}
+
+	// Raycast only on mouse change or click — skip the 409-mesh sweep when idle.
+	if ( MOUSE_MOVED || MOUSE_CLICKING ) {
+		camera.updateMatrixWorld();
+		raycaster.setFromCamera( mouse, camera );
+		var intersects = raycaster.intersectObjects( entities.children, false );
+		if ( intersects.length > 0 ) {
+			if (document.body.style.cursor !== 'pointer') document.body.style.cursor = 'pointer';
+			if ( MOUSE_CLICKING ) {
+				if ( INTERSECTED != intersects[ 0 ].object ) {
+					INTERSECTED = intersects[0].object;
+					console.log('Clicked on:', INTERSECTED);
+					window.open(INTERSECTED.userData.url, '_blank', 'toolbar=yes,scrollbars=yes,resizable=yes,top=100,left=100,width=1200,height=700');
+				}
 			}
+		} else {
+			if (document.body.style.cursor !== 'default') document.body.style.cursor = 'default';
+			INTERSECTED = null;
 		}
-	} else {
-		document.body.style.cursor = 'default';
-		INTERSECTED = null;
-		// for (var i = 0; i < entities.children.length; i++) {
-		// 	var mesh = entities.children[i];
-		// 	mesh.material.color.setRGB(1,1,1);
-		// }
+		MOUSE_MOVED = false;
+	}
+
+	if ( needsRender ) {
+		renderer.render( scene, camera );
+		needsRender = false;
 	}
 };
