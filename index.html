@@ -1,29 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<title>The Library</title>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<link rel="stylesheet" type="text/css" href="css/main.css">
-		<link rel="icon" href="img/favicon.ico">
-	</head>
-	<body>
-		<!-- <script src="js/lib/ImageBitmapLoader.js"></script> -->
-		<script src="js/lib/three.js"></script>
-		<script src="js/lib/Detector.js"></script>
-		<script src="js/lib/FlyControls.js"></script>
-		<script src="js/lib/OrbitControls.js"></script>
-		<!-- <script src="js/lib/TrackballControls.js"></script> -->
-		<!-- load the events data -->
-		<script src="data/books.js"></script>
-		<!-- initialize UI controls -->
- 		<script src="js/init-ui.js"></script>
- 		<!-- check for WebGL / mobile device -->
-		<script src="js/check-support.js"></script>
- 		<!-- 
- 			initialize animation loop
- 			and visualize books data:
- 		-->
-		<script src="js/bookworm.js"></script>
-	</body>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="css/main.css">
+    <link rel="icon" href="img/favicon.ico">
+</head>
+<title>The Library</title>
+
+<style>
+:root {
+  --bg: #0f1115;
+  --text: #f7f7f7;
+  --overlay: rgba(0,0,0,.35);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+               Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 100vh;
+}
+
+.portal {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: inherit;
+  overflow: hidden;
+}
+
+.portal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transform: scale(1);
+  transition: transform .6s ease;
+}
+
+.portal::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--overlay);
+  transition: background .3s ease;
+}
+
+.portal:hover::before {
+  transform: scale(1.05);
+}
+
+.portal:hover::after {
+  background: rgba(0,0,0,.2);
+}
+
+.library::before {
+  background-image:
+    url("img/Abbotsford_House_Study_Room.jpg");
+}
+
+.map::before {
+  background-image:
+    url("img/World_Map_Samuel_Dunn_1794.jpg");
+}
+
+.label {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+.label h1 {
+  font-size: clamp(2rem, 5vw, 4rem);
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.label p {
+  margin-top: .5rem;
+  opacity: .9;
+  font-size: 1rem;
+}
+
+@media (max-width: 800px) {
+  .container {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+  <main class="container">
+    <a class="portal library" href="library.html">
+      <div class="label">
+        <h1>Library</h1>
+        <p>Browse the collection</p>
+      </div>
+    </a>
+
+    <a class="portal map" href="map.html">
+      <div class="label">
+        <h1>Map</h1>
+        <p>Explore the planet</p>
+      </div>
+    </a>
+  </main>
+</body>
 </html>
