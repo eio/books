@@ -78,10 +78,12 @@ for (const b of BOOKS) {
   counts[b.Country] = (counts[b.Country] || 0) + 1;
   (booksByCountry[b.Country] = booksByCountry[b.Country] || []).push(b);
 }
-// Sort each country's books by author then year.
+// Sort each country's books chronologically.
+// Authors therefore appear in the order of their earliest publication.
 for (const k in booksByCountry) {
   booksByCountry[k].sort((x, y) =>
-    x.Author.localeCompare(y.Author) || String(x["Year Published"]).localeCompare(String(y["Year Published"]))
+    Number(x["Year Published"]) - Number(y["Year Published"]) ||
+    x.Author.localeCompare(y.Author)
   );
 }
 document.getElementById("meta").textContent =
