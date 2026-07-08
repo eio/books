@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Books by Country</title>
+    <title>The Map</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -22,20 +22,43 @@
     background: rgba(255,255,255,.95); padding: 10px 14px;
     border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,.15);
     font-size: 13px; line-height: 1.4;
+    transition: opacity .15s ease;
   }
   .title-box h1 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
   .title-box .meta { color: #666; font-size: 11px; }
+  /* Library-view button (top-left), styled to match the title/legend chrome
+     instead of a bare floating icon. */
+  .map-btn {
+    position: absolute; top: 10px; left: 10px; z-index: 500;
+    display: flex; align-items: center; justify-content: center;
+    box-sizing: border-box; width: 40px; height: 40px; padding: 8px;
+    background: rgba(255,255,255,.95);
+    border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,.15);
+    cursor: pointer;
+    transition: opacity .15s ease, box-shadow .15s ease, background .15s ease, transform .1s ease;
+  }
+  /* books.svg ships forest-green to match the map; render it black in the button. */
+  .map-btn img { width: 100%; height: 100%; display: block; filter: brightness(0); }
+  .map-btn:hover { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.22); }
+  .map-btn:active { transform: translateY(1px); box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+  .map-btn:focus-visible { outline: 2px solid #1b5e20; outline-offset: 2px; }
   .legend {
     background: rgba(255,255,255,.95); padding: 8px 12px;
     border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,.15);
     font-size: 12px; line-height: 1.6;
     transition: opacity .15s ease;
   }
-  /* Leaflet controls (z-index 1000) always paint above popups, which are trapped
-     inside the transformed .leaflet-map-pane — no popup z-index can escape that.
-     So when a popup opens, fade the legend out; it returns on close. Fixes the
-     popup rendering underneath the legend, which is most acute on mobile. */
-  .leaflet-container.popup-open .legend { opacity: 0; pointer-events: none; }
+  /* Popups are trapped inside the transformed .leaflet-map-pane, so no popup
+     z-index can escape it: Leaflet controls (z-index 1000, e.g. the legend) and
+     the absolutely positioned chrome below (title box + library button,
+     z-index 500) all paint on top of any open popup. The book list is the whole
+     point of this view, so when a popup opens we fade that chrome out — leaving
+     the popup fully visible on top — and restore it on close. The toggle lives
+     on <body> so it also reaches the title/button, which sit outside the map. */
+  body.popup-open .legend,
+  body.popup-open .title-box,
+  body.popup-open .map-btn,
+  body.popup-open .leaflet-control-zoom { opacity: 0; pointer-events: none; }
   .legend h4 { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: #333; }
   .legend .row { display: flex; align-items: center; }
   .legend .swatch { display: inline-block; width: 18px; height: 12px; margin-right: 6px; border: 1px solid #ddd; }
@@ -45,6 +68,7 @@
   .leaflet-top .leaflet-control-zoom {
     margin-top: 70px;
   }
+  .leaflet-control-zoom { transition: opacity .15s ease; }
   .leaflet-tooltip.book-tooltip {
     background: rgba(0,0,0,.85); color: #fff; border: none;
     padding: 5px 9px; font-size: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.3);
@@ -55,9 +79,17 @@
   .leaflet-popup.country-popup .leaflet-popup-content-wrapper { border-radius: 6px; }
   .leaflet-popup.country-popup .leaflet-popup-content {
     margin: 0; padding: 0;
-    width: min(480px, 92vw) !important; max-height: min(460px, 70vh); overflow: hidden;
+    width: min(480px, 92vw) !important; max-height: min(560px, 78vh); overflow: hidden;
   }
-  .country-popup-inner { display: flex; flex-direction: column; max-height: min(460px, 70vh); }
+  .country-popup-inner { display: flex; flex-direction: column; max-height: min(560px, 78vh); }
+  /* On phones every other overlay is already hidden while a popup is open, so
+     let the book list use nearly the full screen height instead of leaving a
+     tall empty band of map above it. autoPan still slides the country into
+     view just beneath the popup. */
+  @media (max-width: 640px) {
+    .leaflet-popup.country-popup .leaflet-popup-content { max-height: 86vh; }
+    .country-popup-inner { max-height: 86vh; }
+  }
   .country-popup-inner header {
     padding: 10px 14px; border-bottom: 1px solid #e6e6e6; background: #f7f9f6;
   }
@@ -81,10 +113,10 @@
 </head>
 <body>
 
-<img id="books" draggable="false" src="img/books.svg"\
-   title="Library view"\
-   style="width: 3em; top:0.5em; left:0.5em; z-index:500; position:absolute; cursor:pointer;"\
-   onclick="window.location.href='library.html'"/>
+<a class="map-btn" href="library.html"
+   title="Open the 3-D library view" aria-label="Open the 3-D library view">
+  <img src="img/books.svg" alt="" draggable="false">
+</a>
 
 <div id="map"></div>
 
@@ -209,9 +241,12 @@ const map = L.map("map", {
   zoomControl: true,
 });
 
-// Hide the legend while a country popup is open so it never covers the popup.
-map.on("popupopen",  () => map.getContainer().classList.add("popup-open"));
-map.on("popupclose", () => map.getContainer().classList.remove("popup-open"));
+// Fade out the legend, title, and library button while a country popup is open
+// so none of them ever cover it (see the .popup-open CSS for why z-index alone
+// can't fix this). The class goes on <body> because the title/button sit outside
+// the Leaflet container. The popup closes on click-out/X, which restores them.
+map.on("popupopen",  () => document.body.classList.add("popup-open"));
+map.on("popupclose", () => document.body.classList.remove("popup-open"));
 
 L.tileLayer("https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png", {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attribution">CARTO</a>',

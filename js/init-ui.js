@@ -18,20 +18,20 @@ function bigControls() {
 	style.fontSize = '200%';
 	style.position = 'absolute';
 	style.zIndex = 100;
-	style.paddingTop = '100px';
-	style.paddingRight = '100px';
-	style.paddingLeft = '10px';
-	style.paddingBottom = '10%';
+	// Snug padding so the semitransparent background hugs the text instead of
+	// ballooning far past it (was 100px top / 100px right / 10% bottom).
+	style.paddingTop = '10px';
+	style.paddingRight = '12px';
+	style.paddingLeft = '12px';
+	style.paddingBottom = '10px';
+	style.borderRadius = '6px';
 	style.backgroundColor = 'rgba(0,0,0,0.8)';
 }
 
 var controls = '\
-<img id="gitcat" draggable="false" src="img/gitcat.svg"\
-	 style="left:10px; top:10px; z-index:200; position:absolute; cursor:pointer;"\
-	 onclick="window.open(\'https://github.com/eio/books\')"/>\
 <img id="globe" draggable="false" src="img/globe.svg"\
 	 title="World map view"\
-	 style="left:10px; top:42px; z-index:200; position:absolute; cursor:pointer;"\
+	 style="width:32px; height:32px; left:10px; top:10px; z-index:200; position:absolute; cursor:pointer;"\
 	 onclick="window.location.href=\'map.html\'"/>\
 <div id="info">\
 	<div class="actions">\
