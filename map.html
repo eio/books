@@ -109,6 +109,14 @@
   .country-popup-inner td.author { color: #444; width: 28%; }
   .country-popup-inner td a { color: #1b5e20; text-decoration: none; }
   .country-popup-inner td a:hover { text-decoration: underline; }
+
+  .author-filter{cursor:pointer;border-radius:3px;padding:1px 2px;transition:background .15s,color .15s;}
+  .author-filter:hover{background:#e8f3ea;color:#1b5e20;text-decoration:underline;}
+  .filter-bar{display:flex;align-items:center;gap:8px}
+  .clear-filter{border:1px solid #cfd8cf;background:#f7f9f6;color:#1b5e20;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s}
+  .clear-filter:hover{background:#e8f3ea;border-color:#a8c7ad}
+  .filter-label{font-size:11px;color:#55705a;font-style:italic;display:block;margin-top:0.25em;}
+
 </style>
 </head>
 <body>
@@ -264,8 +272,8 @@ function esc(s) {
 
 function popupHtml(name, list) {
   const rows = list.map(b => `
-    <tr>
-      <td class="author">${esc(b.Author)}</td>
+    <tr data-author="${esc(b.Author)}">
+      <td class="author"><span class="author-filter" data-author="${esc(b.Author)}">${esc(b.Author)}</span></td>
       <td>${b.URL ? `<a href="${esc(b.URL)}" target="_blank" rel="noopener">${esc(b.Title)}</a>` : esc(b.Title)}</td>
       <td class="year">${esc(b["Year Published"])}</td>
     </tr>`).join("");
@@ -273,7 +281,7 @@ function popupHtml(name, list) {
     <div class="country-popup-inner">
       <header>
         <h3>${esc(name)}</h3>
-        <div class="sub">${list.length} book${list.length === 1 ? "" : "s"}</div>
+        <div class="sub"><span class="book-count">${list.length} book${list.length === 1 ? "" : "s"}</span><div class="filter-bar" style="display:none;margin-top:6px"><button type="button" class="clear-filter">← Show all authors</button> <span class="filter-label"></span></div></div>
       </header>
       <div class="scroll">
         <table>
@@ -340,6 +348,26 @@ fetch("https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/n
       `<div style="position:absolute;top:60px;left:10px;background:#fee;color:#900;padding:10px;border:1px solid #c66;border-radius:4px;font-size:12px;z-index:600">
        Failed to load country borders: ${esc(err.message)}</div>`);
   });
+
+
+map.on("popupopen",e=>{
+ const el=e.popup.getElement(); if(!el) return;
+ L.DomEvent.disableClickPropagation(el);
+ el.addEventListener("click",ev=>{
+  const a=ev.target.closest(".author-filter,.clear-filter"); if(!a)return;
+  ev.preventDefault();ev.stopPropagation();
+  const rows=[...el.querySelectorAll("tbody tr")];
+  const bar=el.querySelector(".filter-bar"),label=el.querySelector(".filter-label"),count=el.querySelector(".book-count");
+  if(a.classList.contains("clear-filter")){
+    rows.forEach(r=>r.style.display="");bar.style.display="none";
+    count.textContent=`${rows.length} book${rows.length===1?"":"s"}`;return;}
+  const author=a.dataset.author;let n=0;
+  rows.forEach(r=>{const ok=r.dataset.author===author;r.style.display=ok?"":"none";if(ok)n++;});
+  bar.style.display="block";
+  label.textContent="Filtered to: "+author;
+  count.textContent=`${n} book${n===1?"":"s"}`;
+ });
+});
 
 // --- 8. Legend (color scale + top 5) ---
 const legend = L.control({ position: "bottomright" });
